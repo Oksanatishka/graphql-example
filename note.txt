@@ -1,0 +1,114 @@
+Resource:
+- https://www.toptal.com/graphql/creating-your-first-graphql-api
+
+1) initialize a new project
+> npm init
+------------------ configure Babel ----------------------------------------
+2) configure Babel
+- install the required libraries with the following command:
+> npm install --save-dev @babel/core @babel/cli @babel/preset-env @babel/node 
+
+3) create a file with the name .babelrc in our project’s root directory and copy the following configuration there:
+{
+    "presets": [
+        [
+            "@babel/env",
+            { "targets": { "node": "current" } }
+        ]
+    ]
+}
+
+4) edit the package.json file and add the following command to the scripts section:
+{
+    ...
+    "scripts": {
+        "serve": "babel-node index.js"
+    },
+    ...
+}
+----------------------------------------------------------
+5) install the required GraphQL libraries with the following command:
+> npm install --save express apollo-server-express graphql graphql-tools graphql-tag
+
+6) to run a GraphQL server with minimal setup, copy this code snippet in our index.js file:
+
+import gql from 'graphql-tag';
+import express from 'express';
+import { ApolloServer, makeExecutableSchema } from 'apollo-server-express';
+
+const port = process.env.PORT || 8080;
+
+// Define APIs using GraphQL SDL
+const typeDefs = gql`
+   type Query {
+       sayHello(name: String!): String!
+   }
+
+   type Mutation {
+       sayHello(name: String!): String!
+   }
+`;
+
+// Define resolvers map for API definitions in SDL
+const resolvers = {
+   Query: {
+       sayHello: (obj, args, context, info) => {
+           return `Hello ${ args.name }!`;
+       }
+   },
+
+   Mutation: {
+       sayHello: (obj, args, context, info) => {
+           return `Hello ${ args.name }!`;
+       }
+   }
+};
+
+// Configure express
+const app = express();
+
+// Build GraphQL schema based on SDL definitions and resolvers maps
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+// Build Apollo server
+const apolloServer = new ApolloServer({ schema });
+apolloServer.applyMiddleware({ app });
+
+// Run server
+app.listen({ port }, () => {
+   console.log(`🚀Server ready at http://localhost:${ port }${ apolloServer.graphqlPath }`);
+});
+
+7) run server 
+> npm run serve
+
+navigate in a web browser to the URL http://localhost:8080/graphql, GraphQL’s interactive visual shell, called Playground, 
+will open, where we can execute GraphQL queries and mutations and see the result data.
+
+**************
+In the GraphQL world, API functions are divided into three sets, called queries, mutations, and subscriptions:
+ - Queries are used by the client to request the data it needs from the server.
+ - Mutations are used by the client to create/update/delete data on the server.
+ - Subscriptions are used by the client to create and maintain real-time connection to the server. This enables the client to get events from the server and act accordingly.
+
+Advanced scalar data types: Date, Time, and DateTime. -> install library 'graphql-iso-date'.
+
+Other libraries:
+- 'graphql-type-json'   gives us the ability to use dynamic typing in our GraphQL schema and pass or return untyped JSON objects using our API. 
+- 'graphql-scalar'      gives us the ability to to define custom GraphQL scalars with advanced sanitization/validation/transformation.
+
+Splitting Schema
+After adding more functionality to your schema, it will start growing and we will understand that it’s impossible to keep 
+the whole set of definitions in one file, and we need to split it up into small pieces to organize the code and make it 
+more scalable for a bigger size. Fortunately schema builder function makeExecutableSchema, provided by Apollo, also accepts 
+schema definitions and resolvers maps in the form of an array. This gives us the ability to split our schema and resolvers 
+map into smaller parts. This is exactly what I have done in my sample project; 
+I have divided the API into the following parts:
+
+auth.api.graphql – API for user authentication and registration
+author.api.graphql – CRUD API for author entries
+book.api.graphql – CRUD API for book entries
+root.api.graphql – Root of schema and common definitions (like advanced scalar types)
+user.api.graphql – CRUD API for user management
+**************
+
